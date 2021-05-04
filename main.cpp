@@ -1,6 +1,7 @@
 // Victor Gordan
 #include <iostream>
 #include <vector>
+#include <string>
 #include "SFML/Graphics.hpp"
 
 
@@ -55,6 +56,11 @@ Cell prevField[NUM_CELLS][NUM_CELLS];
 // The field that will be displayed on this frame
 Cell crntField[NUM_CELLS][NUM_CELLS];
 
+// Create font object
+sf::Font font;
+// Holds the step you are on
+unsigned int counter = 0;
+sf::Text counterText;
 
 
 // Generates a random float number between 0 and 1
@@ -306,6 +312,21 @@ int main()
 	// Initialize all textures
 	initializeTextures();
 
+	// Loads font
+	if (!font.loadFromFile("fonts/Roboto-Bold.ttf"))
+	{
+		std::cout << "Loading of font failed!" << std::endl;
+	}
+	// Configures settings for the counter
+	counterText.setFont(font);
+	counterText.setCharacterSize(24);
+	counterText.setFillColor(sf::Color::White);
+
+
+
+	// Controls the pausing and unpausing of the simulation
+	bool paused = false;
+
 	// Main loop
 	while (window.isOpen())
 	{
@@ -316,27 +337,40 @@ int main()
 			// Handle closing of window
 			if (event.type == sf::Event::Closed)
 				window.close();
+			if (event.type == sf::Event::KeyPressed)
+			{
+				if (event.key.code == sf::Keyboard::P)
+				{
+					paused = !paused;
+				}
+			}
 		}
 
-		// Update all cells
-		updateField();
-		// Imprint the crntField on the fieldImage
-		imprintField(&fieldImage);
-		// Impose the field onto the texture
-		fieldTex.update(fieldImage);
+		if (!paused)
+		{
+			// Update all cells
+			updateField();
+			// Imprint the crntField on the fieldImage
+			imprintField(&fieldImage);
+			// Impose the field onto the texture
+			fieldTex.update(fieldImage);
 
+			// Clear window
+			window.clear(sf::Color(25, 25, 30));
+			// Displays step on which you are on
+			std::string counterString = "Step: " + std::to_string(counter++);
+			counterText.setString(counterString);
+			window.draw(counterText);
+			// Draw topography
+			window.draw(topographySprite);
+			// Draw field
+			window.draw(fieldSprite);
+			// Swap buffers
+			window.display();
+			// Swap fields
+			swapFields();
 
-
-		// Clear window
-		window.clear(sf::Color(25, 25, 30));
-		// Draw topography
-		window.draw(topographySprite);
-		// Draw field
-		window.draw(fieldSprite);
-		// Swap buffers
-		window.display();
-		// Swap fields
-		swapFields();
+		}
 	}
 	return 0;
 }
