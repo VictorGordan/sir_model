@@ -5,23 +5,28 @@
 
 
 
+// Window properties
 const unsigned WIDTH_WINDOW = 1600;
 const unsigned HEIGHT_WINDOW = 900;
 const sf::String NAME_WINDOW = "SRI Model";
-const unsigned int SPEED = 60;
 
+// Simulation properties
+const unsigned int SPEED = 60;
 const unsigned NUM_CELLS = 500;
-const char* TOPOGRAPHY_FILE = "maps/england.png";
 const float INITIAL_INFECTIOUS = 0.1f;
 const float INFECTION_CHANCE = 0.5f;
-
 const unsigned INFECTIOUS_TIME = 5; // MAYBE STUDY THESE?
 const unsigned RESISTANT_TIME = 25; // MAYBE STUDY THESE?
 
+// Image to be used as topography
+const char* TOPOGRAPHY_FILE = "maps/england.png";
 
+// Colors for cells
 const sf::Color COLOR_SUSCEPTIBLE = sf::Color(86, 178, 114, 255);
 const sf::Color COLOR_INFECTIOUS = sf::Color(216, 36, 58, 255);
 const sf::Color COLOR_RESISTANT = sf::Color(43, 118, 112, 255);
+
+
 
 enum States
 {
@@ -45,24 +50,25 @@ struct Cell
 	Cell* SE;
 };
 
-// Cell that will be the border to the field of cells
-Cell resistantForPointer = { Resistant, 0.0f, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
-Cell* RESISTANT = &resistantForPointer;
-
 // The field that was displayed on the last frame
 Cell prevField[NUM_CELLS][NUM_CELLS];
 // The field that will be displayed on this frame
 Cell crntField[NUM_CELLS][NUM_CELLS];
+
+
 
 // Generates a random float number between 0 and 1
 float randf()
 {
 	return (float)(rand() / (float)RAND_MAX);
 }
-
 // Initializes the field of cells
 void initializeFields(sf::Texture topography)
 {
+	// Cell that will be the border to the field of cells
+	Cell resistantForPointer = { Resistant, 0.0f, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+	Cell* RESISTANT = &resistantForPointer;
+
 	// Make Image of topography to read easily
 	sf::Image topographyCopy = topography.copyToImage();
 	// Initialize states, population density, and times
@@ -135,7 +141,6 @@ void initializeFields(sf::Texture topography)
 		}
 	}
 }
-
 // Set the colors of an image to correspond with the properties of a field of cells
 void imprintField(sf::Image* image)
 {
@@ -158,7 +163,7 @@ void imprintField(sf::Image* image)
 		}
 	}
 }
-
+// Check if there are any infectious cells as neighbours
 bool checkInfectious(unsigned int i, unsigned int j)
 {
 	if (prevField[i][j].NW->state == Infectious)
@@ -218,36 +223,40 @@ void updateField()
 		}
 	}
 }
-
-
-
-int main()
+// Make prevField equal crntField
+void swapFields()
 {
-	// Create Window object
-	sf::RenderWindow window;
-	// Assign window object properties
-	window.create(sf::VideoMode(WIDTH_WINDOW, HEIGHT_WINDOW), NAME_WINDOW);
-	// Enable VSync
-	window.setFramerateLimit(SPEED);
+	for (unsigned int i = 0; i < NUM_CELLS; i++)
+	{
+		for (unsigned int j = 0; j < NUM_CELLS; j++)
+		{
+			prevField[i][j] = crntField[i][j];
+		}
+	}
+}
 
-
-
-
-
-	// Create Texture object
-	sf::Texture topography;
+// Create Texture object
+sf::Texture topography;
+// Create Sprite object to draw the texture
+sf::Sprite topographySprite;
+// Create Image object
+sf::Image fieldImage;
+// Create Texture object
+sf::Texture fieldTex;
+// Create Sprite object to draw the texture
+sf::Sprite fieldSprite;
+// Initializes all textures by assigning them the corresponding images
+void initializeTextures()
+{
 	// Load Texture
 	if (!topography.loadFromFile(TOPOGRAPHY_FILE))
 	{
 		std::cout << "Failed to load the topography texture" << std::endl;
-		return -1;
 	}
 	// Disable smoothing
 	topography.setSmooth(false);
 
 
-	// Create Sprite object to draw the texture
-	sf::Sprite topographySprite;
 	// Assign the texture to the sprite object
 	topographySprite.setTexture(topography);
 	// Center sprite
@@ -261,20 +270,15 @@ int main()
 	// Initialize the fields
 	initializeFields(topography);
 
-	// Create Image object
-	sf::Image fieldImage;
 	// Make the field white
 	fieldImage.create(NUM_CELLS, NUM_CELLS, sf::Color(0, 0, 0));
 	// Imprint the crntField on the fieldImage
 	imprintField(&fieldImage);
 
-	// Create Texture object
-	sf::Texture fieldTex;
 	// Make the Texture blank
 	if (!fieldTex.create(NUM_CELLS, NUM_CELLS))
 	{
 		std::cout << "Failed to create the texture of the field" << std::endl;
-		return -1;
 	}
 	// Disable smoothing
 	fieldTex.setSmooth(false);
@@ -282,8 +286,6 @@ int main()
 	fieldTex.update(fieldImage);
 
 
-	// Create Sprite object to draw the texture
-	sf::Sprite fieldSprite;
 	// Assign the texture to the sprite object
 	fieldSprite.setTexture(fieldTex);
 	// Center sprite
@@ -291,8 +293,18 @@ int main()
 	// Resize sprite
 	float fieldScaleResize = ((float)WIDTH_WINDOW * 7.0f) / (16.0f * (float)fieldTex.getSize().x);
 	fieldSprite.setScale(fieldScaleResize, fieldScaleResize);
+}
 
-
+int main()
+{
+	// Create Window object
+	sf::RenderWindow window;
+	// Assign window object properties
+	window.create(sf::VideoMode(WIDTH_WINDOW, HEIGHT_WINDOW), NAME_WINDOW);
+	// Enable VSync
+	window.setFramerateLimit(SPEED);
+	// Initialize all textures
+	initializeTextures();
 
 	// Main loop
 	while (window.isOpen())
@@ -306,7 +318,7 @@ int main()
 				window.close();
 		}
 
-
+		// Update all cells
 		updateField();
 		// Imprint the crntField on the fieldImage
 		imprintField(&fieldImage);
@@ -324,14 +336,7 @@ int main()
 		// Swap buffers
 		window.display();
 		// Swap fields
-		for (unsigned int i = 0; i < NUM_CELLS; i++)
-		{
-			for (unsigned int j = 0; j < NUM_CELLS; j++)
-			{
-				prevField[i][j] = crntField[i][j];
-			}
-		}
+		swapFields();
 	}
-
 	return 0;
 }
