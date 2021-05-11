@@ -14,7 +14,7 @@ const sf::String NAME_WINDOW = "SRI Model";
 // Simulation properties
 const unsigned int SPEED = 60;
 const unsigned NUM_CELLS = 500;
-const float INITIAL_INFECTIOUS = 0.1f;
+const float INITIAL_INFECTIOUS = 0.001f;
 const float INFECTION_CHANCE = 0.5f;
 const unsigned INFECTIOUS_TIME = 5; // MAYBE STUDY THESE?
 const unsigned RESISTANT_TIME = 25; // MAYBE STUDY THESE?
@@ -209,7 +209,7 @@ void updateField()
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
 				}
-				else if (randf() > prevField[i][j].popDensity)
+				else
 				{
 					crntField[i][j].time++;
 				}
@@ -236,7 +236,9 @@ void swapFields()
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			prevField[i][j] = crntField[i][j];
+			prevField[i][j].state = crntField[i][j].state;
+			prevField[i][j].popDensity = crntField[i][j].popDensity;
+			prevField[i][j].time = crntField[i][j].time;
 		}
 	}
 }
