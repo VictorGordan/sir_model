@@ -1,6 +1,5 @@
 // Victor Gordan
 #include <iostream>
-#include <vector>
 #include <string>
 #include "SFML/Graphics.hpp"
 
@@ -9,15 +8,16 @@
 // Window properties
 const unsigned WIDTH_WINDOW = 1600;
 const unsigned HEIGHT_WINDOW = 900;
-const sf::String NAME_WINDOW = "SRI Model";
+const sf::String NAME_WINDOW = "SIR Model";
 
 // Simulation properties
 const unsigned int SPEED = 60;
 const unsigned NUM_CELLS = 500;
-const float INITIAL_INFECTIOUS = 0.001f;
-const float INFECTION_CHANCE = 0.5f;
-const unsigned INFECTIOUS_TIME = 5; // MAYBE STUDY THESE?
-const unsigned RESISTANT_TIME = 25; // MAYBE STUDY THESE?
+const float INITIAL_INFECTIOUS = 0.00001f;
+const float INFECTION_CHANCE = 1.0f;
+// One time step is equal to one day
+const unsigned INFECTIOUS_TIME = 14;
+const unsigned RESISTANT_TIME = 240;
 
 // Image to be used as topography
 const char* TOPOGRAPHY_FILE = "maps/england.png";
@@ -26,6 +26,7 @@ const char* TOPOGRAPHY_FILE = "maps/england.png";
 const sf::Color COLOR_SUSCEPTIBLE = sf::Color(86, 178, 114, 255);
 const sf::Color COLOR_INFECTIOUS = sf::Color(216, 36, 58, 255);
 const sf::Color COLOR_RESISTANT = sf::Color(43, 118, 112, 255);
+const sf::Color COLOR_WATER = sf::Color(30, 42, 66, 255);
 
 
 
@@ -154,7 +155,11 @@ void imprintField(sf::Image* image)
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			if (crntField[i][j].state == Susceptible)
+			if (crntField[i][j].popDensity == 0.0f)
+			{
+				image->setPixel(i, j, COLOR_WATER);
+			}
+			else if (crntField[i][j].state == Susceptible)
 			{
 				image->setPixel(i, j, COLOR_SUSCEPTIBLE);
 			}
