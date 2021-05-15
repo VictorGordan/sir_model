@@ -10,4 +10,5 @@ Capabilities:
 - can switch out the population density map
 
 Example:
-![Alt Text](https://github.com/VictorGordan/sir/blob/main/gif/SIR%20Model.gif)
+
+![ExampleGIF](https://github.com/VictorGordan/sir/blob/main/gif/SIR%20Model.gif)
