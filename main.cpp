@@ -209,7 +209,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Infectious)
 			{
-				if (prevField[i][j].time == INFECTIOUS_TIME)
+				if (prevField[i][j].time >= INFECTIOUS_TIME && randf() > prevField[i][j].popDensity) // Longer infection in bigger cities
 				{
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
@@ -221,7 +221,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Resistant && prevField[i][j].popDensity != 0.0f)
 			{
-				if (prevField[i][j].time == RESISTANT_TIME)
+				if (prevField[i][j].time >= RESISTANT_TIME && randf() < prevField[i][j].popDensity) // Shorter resistance in bigger cities
 				{
 					crntField[i][j].state = Susceptible;
 					crntField[i][j].time = 0;
