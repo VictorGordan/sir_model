@@ -1,6 +1,8 @@
 // Victor Gordan
 #include <iostream>
 #include <string>
+#include "imgui.h"
+#include "imgui-SFML.h"
 #include "SFML/Graphics.hpp"
 
 
@@ -11,22 +13,22 @@ const unsigned HEIGHT_WINDOW = 900;
 const sf::String NAME_WINDOW = "SIR Model";
 
 // Simulation properties
-const unsigned int SPEED = 60;
+int speed = 60;
 const unsigned NUM_CELLS = 500;
-const float INITIAL_INFECTIOUS = 0.00001f;
-const float INFECTION_CHANCE = 1.0f;
+float initialInfectious = 0.00001f;
+float infectionChance = 1.0f;
 // One time step is equal to one day
-const unsigned INFECTIOUS_TIME = 14;
-const unsigned RESISTANT_TIME = 240;
+int infectiousTime = 14;
+int resistantTime = 240;
 
 // Image to be used as topography
 const char* TOPOGRAPHY_FILE = "maps/england.png";
 
 // Colors for cells
-const sf::Color COLOR_SUSCEPTIBLE = sf::Color(86, 178, 114, 255);
-const sf::Color COLOR_INFECTIOUS = sf::Color(216, 36, 58, 255);
-const sf::Color COLOR_RESISTANT = sf::Color(43, 118, 112, 255);
-const sf::Color COLOR_WATER = sf::Color(30, 42, 66, 255);
+sf::Color COLOR_SUSCEPTIBLE = sf::Color(86, 178, 114, 255);
+sf::Color COLOR_INFECTIOUS = sf::Color(216, 36, 58, 255);
+sf::Color COLOR_RESISTANT = sf::Color(43, 118, 112, 255);
+sf::Color COLOR_WATER = sf::Color(30, 42, 66, 255);
 
 
 
@@ -83,7 +85,7 @@ void initializeFields(sf::Texture topography)
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			if (randf() < INITIAL_INFECTIOUS && (float)topographyCopy.getPixel(i, j).r / 255.0f != 0.0f)
+			if (randf() < initialInfectious && (float)topographyCopy.getPixel(i, j).r / 255.0f != 0.0f)
 			{
 				prevField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
 				crntField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
@@ -203,13 +205,13 @@ void updateField()
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			if (prevField[i][j].state == Susceptible && checkInfectious(i, j) && randf() < INFECTION_CHANCE * prevField[i][j].popDensity)
+			if (prevField[i][j].state == Susceptible && checkInfectious(i, j) && randf() < infectionChance * prevField[i][j].popDensity)
 			{
 				crntField[i][j].state = Infectious;
 			}
 			else if (prevField[i][j].state == Infectious)
 			{
-				if (prevField[i][j].time >= INFECTIOUS_TIME && randf() > prevField[i][j].popDensity) // Longer infection in bigger cities
+				if (prevField[i][j].time >= infectiousTime && randf() > prevField[i][j].popDensity) // Longer infection in bigger cities
 				{
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
@@ -221,7 +223,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Resistant && prevField[i][j].popDensity != 0.0f)
 			{
-				if (prevField[i][j].time >= RESISTANT_TIME && randf() < prevField[i][j].popDensity) // Shorter resistance in bigger cities
+				if (prevField[i][j].time >= resistantTime && randf() < prevField[i][j].popDensity) // Shorter resistance in bigger cities
 				{
 					crntField[i][j].state = Susceptible;
 					crntField[i][j].time = 0;
@@ -314,8 +316,10 @@ int main()
 	sf::RenderWindow window;
 	// Assign window object properties
 	window.create(sf::VideoMode(WIDTH_WINDOW, HEIGHT_WINDOW), NAME_WINDOW);
-	// Enable VSync
-	window.setFramerateLimit(SPEED);
+	// Set Framerate Speed
+	window.setFramerateLimit(speed);
+	// Initialize ImGUI
+	ImGui::SFML::Init(window);
 	// Initialize all textures
 	initializeTextures();
 
@@ -333,6 +337,14 @@ int main()
 
 	// Controls the pausing and unpausing of the simulation
 	bool paused = false;
+	// Controls the restartation of the simulation
+	bool restartSimulation = false;
+
+	// Clock needed for ImGUI
+	sf::Clock deltaClock;
+	// Times used to control speed of simulation
+	sf::Clock cycleClock;
+	sf::Time lastTime = deltaClock.getElapsedTime();
 
 	// Main loop
 	while (window.isOpen())
@@ -341,6 +353,9 @@ int main()
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
+			// Handle ImGUI events
+			ImGui::SFML::ProcessEvent(event);
+
 			// Handle closing of window
 			if (event.type == sf::Event::Closed)
 				window.close();
@@ -350,11 +365,47 @@ int main()
 				{
 					paused = !paused;
 				}
+				if (event.key.code == sf::Keyboard::R)
+				{
+					// Initialize all textures
+					initializeTextures();
+					// Reset counter
+					counter = 0;
+				}
 			}
 		}
 
-		if (!paused)
+		// Update ImGUI UI
+		ImGui::SFML::Update(window, deltaClock.restart());
+
+
+
+		// ImGUI UI
+		ImGui::Begin("Settings");
+		// Handles restarting
+		if (ImGui::Button("Restart"))
 		{
+			// Initialize all textures
+			initializeTextures();
+			// Reset counter
+			counter = 0;
+		}
+		// Handles pausing
+		ImGui::Checkbox("Pause", &paused);
+		// Controls Variables
+		ImGui::SliderInt("Speed", &speed, 1, 120);
+		ImGui::SliderFloat("Initial Infectious", &initialInfectious, 0.000001f, 1.0f, "%.6f");
+		ImGui::SliderFloat("Infection Chance", &infectionChance, 0.01f, 1.0f, "%.2f");
+		ImGui::SliderInt("Infectious Time", &infectiousTime, 0, 365);
+		ImGui::SliderInt("Resistant Time", &resistantTime, 0, 365);
+		ImGui::End();
+
+
+
+		if (!paused && cycleClock.getElapsedTime().asSeconds() - lastTime.asSeconds() >= 1.0f / speed)
+		{
+			// Update times
+			lastTime = cycleClock.getElapsedTime();
 			// Update all cells
 			updateField();
 			// Imprint the crntField on the fieldImage
@@ -372,12 +423,38 @@ int main()
 			window.draw(topographySprite);
 			// Draw field
 			window.draw(fieldSprite);
+			// Render ImGUI UI
+			ImGui::SFML::Render(window);
 			// Swap buffers
 			window.display();
 			// Swap fields
 			swapFields();
-
+		}
+		else
+		{
+			// Imprint the crntField on the fieldImage
+			imprintField(&fieldImage);
+			// Impose the field onto the texture
+			fieldTex.update(fieldImage);
+			// Clear window
+			window.clear(sf::Color(25, 25, 30));
+			// Displays step on which you are on
+			window.draw(counterText);
+			// Draw topography
+			window.draw(topographySprite);
+			// Draw field
+			window.draw(fieldSprite);
+			// Render ImGUI UI
+			ImGui::SFML::Render(window);
+			// Swap buffers
+			window.display();
+			// Swap fields
+			swapFields();
 		}
 	}
+
+	// End ImGUI
+	ImGui::SFML::Shutdown();
+
 	return 0;
 }
