@@ -8,6 +8,7 @@ Capabilities:
 - takes into account population density for infection chances
 - can modify multiple variables such as the length of the infectious and resistance periods, initial infections, base infection chance, and more
 - can switch out the population density map
+- intuitive UI using ImGUI that allows the change of variables on the fly
 
 Example:
 
