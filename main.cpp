@@ -19,7 +19,6 @@ const sf::String NAME_WINDOW = "SIR Model";
 int speed = 60;
 const unsigned NUM_CELLS = 500;
 float initialInfectious = 0.00001f;
-float infectionChance = 1.0f;
 int seed = 1;
 // One time step is equal to one day
 int infectiousTime = 14;
@@ -137,7 +136,7 @@ void initializeFields(sf::Texture topography)
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			if (randf() < initialInfectious && (float)topographyCopy.getPixel(i, j).r / 255.0f != 0.0f)
+			if (randf() < initialInfectious * ((0.8f / (1.0f + 1800.0f * std::exp(-15.0f * (float)topographyCopy.getPixel(i, j).r / 255.0f))) + 0.1f) && (float)topographyCopy.getPixel(i, j).r / 255.0f != 0.0f)
 			{
 				prevField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
 				crntField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
@@ -270,7 +269,7 @@ void updateField()
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
 		{
-			if (prevField[i][j].state == Susceptible && checkInfectious(i, j) && randf() < infectionChance * prevField[i][j].popDensity)
+			if (prevField[i][j].state == Susceptible && checkInfectious(i, j) && randf() < (0.8f / (1.0f + 1800.0f * std::exp(-15.0f * prevField[i][j].popDensity))) + 0.1f)
 			{
 				crntField[i][j].state = Infectious;
 				totalInfectious++;
@@ -280,7 +279,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Infectious)
 			{
-				if (prevField[i][j].time >= infectiousTime && randf() > prevField[i][j].popDensity) // Longer infection in bigger cities
+				if (prevField[i][j].time >= infectiousTime && randf() > (0.8f / (1.0f + 1800.0f * std::exp(-15.0f * prevField[i][j].popDensity))) + 0.1f) // Longer infection in bigger cities
 				{
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
@@ -296,7 +295,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Resistant && prevField[i][j].popDensity != 0.0f)
 			{
-				if (prevField[i][j].time >= resistantTime && randf() < prevField[i][j].popDensity) // Shorter resistance in bigger cities
+				if (prevField[i][j].time >= resistantTime && randf() < (0.8f / (1.0f + 1800.0f * std::exp(-15.0f * prevField[i][j].popDensity))) + 0.1f) // Shorter resistance in bigger cities
 				{
 					crntField[i][j].state = Susceptible;
 					crntField[i][j].time = 0;
@@ -457,14 +456,14 @@ int main()
 					totalSusceptible = 0;
 					totalInfectious = 0;
 					totalResistant = 0;
-					graphSusceptible.clear(); graphSusceptible.reserve(100000);
-					graphInfectious.clear(); graphInfectious.reserve(100000);
-					graphResistant.clear(); graphResistant.reserve(100000);
-					graphCounter.clear(); graphCounter.reserve(100000);
+					graphSusceptible.clear(); graphSusceptible.resize(100000);
+					graphInfectious.clear(); graphInfectious.resize(100000);
+					graphResistant.clear(); graphResistant.resize(100000);
+					graphCounter.clear(); graphCounter.resize(100000);
 					// Reset Growth Graph
-					graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
-					graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
-					graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+					graphGrowthSusceptible.clear(); graphGrowthSusceptible.resize(100000);
+					graphGrowthInfectious.clear(); graphGrowthInfectious.resize(100000);
+					graphGrowthResistant.clear(); graphGrowthResistant.resize(100000);
 					// Initialize all textures
 					initializeTextures();
 				}
@@ -473,7 +472,6 @@ int main()
 					std::string filepath =
 						"screenshots/Step " + std::to_string(counter) +
 						" ,initInf " + std::to_string(initialInfectious) +
-						" ,infChance " + std::to_string(infectionChance) +
 						" ,infTime " + std::to_string(infectiousTime) +
 						" ,resTime " + std::to_string(resistantTime) +
 						" ,Seed " + std::to_string(seed) +
@@ -516,14 +514,14 @@ int main()
 			totalSusceptible = 0;
 			totalInfectious = 0;
 			totalResistant = 0;
-			graphSusceptible.clear(); graphSusceptible.reserve(100000);
-			graphInfectious.clear(); graphInfectious.reserve(100000);
-			graphResistant.clear(); graphResistant.reserve(100000);
-			graphCounter.clear(); graphCounter.reserve(100000);
+			graphSusceptible.clear(); graphSusceptible.resize(100000);
+			graphInfectious.clear(); graphInfectious.resize(100000);
+			graphResistant.clear(); graphResistant.resize(100000);
+			graphCounter.clear(); graphCounter.resize(100000);
 			// Reset Growth Graph
-			graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
-			graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
-			graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+			graphGrowthSusceptible.clear(); graphGrowthSusceptible.resize(100000);
+			graphGrowthInfectious.clear(); graphGrowthInfectious.resize(100000);
+			graphGrowthResistant.clear(); graphGrowthResistant.resize(100000);
 			// Initialize all textures
 			initializeTextures();
 		}
@@ -533,7 +531,6 @@ int main()
 		ImGui::Text("Ctrl + Left Click on variables to change manually");
 		ImGui::SliderInt("Speed (Mouse Wheel)", &speed, 1, 60);
 		ImGui::SliderFloat("Initial Infectious", &initialInfectious, 0.000001f, 1.0f, "%.6f");
-		ImGui::SliderFloat("Infection Chance", &infectionChance, 0.01f, 1.0f, "%.2f");
 		ImGui::SliderInt("Infectious Time", &infectiousTime, 0, 365);
 		ImGui::SliderInt("Resistant Time", &resistantTime, 0, 365);
 		ImGui::SliderInt("Seed", &seed, 0, 999999999);
@@ -548,7 +545,6 @@ int main()
 			std::string filepath = 
 				"screenshots/Step " + std::to_string(counter) + 
 				" ,initInf " + std::to_string(initialInfectious) + 
-				" ,infChance " + std::to_string(infectionChance) + 
 				" ,infTime " + std::to_string(infectiousTime) + 
 				" ,resTime " + std::to_string(resistantTime) + 
 				" ,Seed " + std::to_string(seed) +
@@ -581,14 +577,14 @@ int main()
 				totalSusceptible = 0;
 				totalInfectious = 0;
 				totalResistant = 0;
-				graphSusceptible.clear(); graphSusceptible.reserve(100000);
-				graphInfectious.clear(); graphInfectious.reserve(100000);
-				graphResistant.clear(); graphResistant.reserve(100000);
-				graphCounter.clear(); graphCounter.reserve(100000);
+				graphSusceptible.clear(); graphSusceptible.resize(100000);
+				graphInfectious.clear(); graphInfectious.resize(100000);
+				graphResistant.clear(); graphResistant.resize(100000);
+				graphCounter.clear(); graphCounter.resize(100000);
 				// Reset Growth Graph
-				graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
-				graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
-				graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+				graphGrowthSusceptible.clear(); graphGrowthSusceptible.resize(100000);
+				graphGrowthInfectious.clear(); graphGrowthInfectious.resize(100000);
+				graphGrowthResistant.clear(); graphGrowthResistant.resize(100000);
 				// Initialize all textures
 				initializeTextures();
 			}
