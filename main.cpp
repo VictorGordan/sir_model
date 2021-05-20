@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <filesystem>
 #include "imgui.h"
 #include "implot.h"
 #include "imgui-SFML.h"
@@ -24,8 +25,9 @@ int seed = 1;
 int infectiousTime = 14;
 int resistantTime = 240;
 
-// Image to be used as topography
-std::string topographyFile = "maps/england.png";
+// Images to be used as the topography map
+std::vector<std::string> maps;
+std::string topographyFile;
 
 // Proportion Graph variables
 int totalCells = 0;
@@ -94,6 +96,23 @@ sf::Font font;
 // Holds the step you are on
 unsigned int counter = 0;
 sf::Text counterText;
+
+
+// Reads all the maps
+void readMaps()
+{
+	maps.clear();
+	maps.reserve(100);
+	std::string path = "maps";
+	for (const auto& entry : std::filesystem::directory_iterator(path))
+		maps.push_back(entry.path().string());
+}
+
+// Returns the name of a map by its path
+std::string getName(std::string path)
+{
+	return path.substr(path.find("\\") + 1, path.find(".png") - 5);
+}
 
 
 // Generates a random float number between 0 and 1
@@ -380,6 +399,10 @@ int main()
 	ImGui::SFML::Init(window);
 	// Initialize ImPlot
 	ImPlot::CreateContext();
+	// Read the maps
+	readMaps();
+	// Select first map
+	topographyFile = maps[0];
 	// Initialize all textures
 	initializeTextures();
 
@@ -531,6 +554,44 @@ int main()
 				" ,Seed " + std::to_string(seed) +
 				".png";
 			fieldImage.saveToFile(filepath);
+		}
+		ImGui::End();
+
+
+
+
+
+		// List of maps to be used
+		ImGui::Begin("Maps");
+		if (ImGui::Button("Refresh Maps"))
+		{
+			// Read the maps
+			readMaps();
+		}
+		ImGui::Text("Maps:");
+		for (unsigned int i = 0; i < maps.size(); i++)
+		{
+			if (ImGui::Button(getName(maps[i]).c_str()))
+			{
+				topographyFile = maps[i];
+				// Reset counter
+				counter = 0;
+				// Reset Proportion Graph
+				totalCells = 0;
+				totalSusceptible = 0;
+				totalInfectious = 0;
+				totalResistant = 0;
+				graphSusceptible.clear(); graphSusceptible.reserve(100000);
+				graphInfectious.clear(); graphInfectious.reserve(100000);
+				graphResistant.clear(); graphResistant.reserve(100000);
+				graphCounter.clear(); graphCounter.reserve(100000);
+				// Reset Growth Graph
+				graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
+				graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
+				graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+				// Initialize all textures
+				initializeTextures();
+			}
 		}
 		ImGui::End();
 
