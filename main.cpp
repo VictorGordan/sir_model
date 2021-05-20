@@ -1,7 +1,9 @@
 // Victor Gordan
 #include <iostream>
 #include <string>
+#include <vector>
 #include "imgui.h"
+#include "implot.h"
 #include "imgui-SFML.h"
 #include "SFML/Graphics.hpp"
 
@@ -17,18 +19,46 @@ int speed = 60;
 const unsigned NUM_CELLS = 500;
 float initialInfectious = 0.00001f;
 float infectionChance = 1.0f;
+int seed = 1;
 // One time step is equal to one day
 int infectiousTime = 14;
 int resistantTime = 240;
 
 // Image to be used as topography
-const char* TOPOGRAPHY_FILE = "maps/england.png";
+std::string topographyFile = "maps/england.png";
+
+// Proportion Graph variables
+int totalCells = 0;
+int totalSusceptible = 0;
+int totalInfectious = 0;
+int totalResistant = 0;
+std::vector<float> graphSusceptible;
+std::vector<float> graphInfectious;
+std::vector<float> graphResistant;
+std::vector<float> graphCounter;
+bool drawSusceptible = true;
+bool drawInfectious = true;
+bool drawResistant = true;
+bool legend = false;
+
+// Growth Graph variables
+int growthSusceptible = 0;
+int growthInfectious = 0;
+int growthResistant = 0;
+std::vector<float> graphGrowthSusceptible;
+std::vector<float> graphGrowthInfectious;
+std::vector<float> graphGrowthResistant;
+bool drawGrowthSusceptible = true;
+bool drawGrowthInfectious = true;
+bool drawGrowthResistant = true;
+bool lockY = false;
+bool legendGrowth = false;
 
 // Colors for cells
-sf::Color COLOR_SUSCEPTIBLE = sf::Color(86, 178, 114, 255);
-sf::Color COLOR_INFECTIOUS = sf::Color(216, 36, 58, 255);
-sf::Color COLOR_RESISTANT = sf::Color(43, 118, 112, 255);
-sf::Color COLOR_WATER = sf::Color(30, 42, 66, 255);
+float colorSusceptible[3] = { 86.0f / 255.0f, 178.0f / 255.0f, 114.0f / 255.0f};
+float colorInfectious[3] = { 216.0f / 255.0f, 36.0f / 255.0f, 58.0f / 255.0f};
+float colorResistant[3] = { 43.0f / 255.0f, 118.0f / 255.0f, 112.0f / 255.0f};
+float colorWater[3] = { 30.0f / 255.0f, 42.0f / 255.0f, 66.0f / 255.0f};
 
 
 
@@ -74,6 +104,9 @@ float randf()
 // Initializes the field of cells
 void initializeFields(sf::Texture topography)
 {
+	// Set seed
+	srand(seed);
+
 	// Cell that will be the border to the field of cells
 	Cell resistantForPointer = { Resistant, 0.0f, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 	Cell* RESISTANT = &resistantForPointer;
@@ -89,6 +122,8 @@ void initializeFields(sf::Texture topography)
 			{
 				prevField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
 				crntField[i][j] = Cell{ Infectious, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
+				totalInfectious++;
+				totalCells++;
 			}
 			else if ((float)topographyCopy.getPixel(i, j).r / 255.0f == 0.0f)
 			{
@@ -99,6 +134,8 @@ void initializeFields(sf::Texture topography)
 			{
 				prevField[i][j] = Cell{ Susceptible, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
 				crntField[i][j] = Cell{ Susceptible, (float)topographyCopy.getPixel(i, j).r / 255.0f, 0, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT, RESISTANT };
+				totalSusceptible++;
+				totalCells++;
 			}
 		}
 	}
@@ -149,6 +186,11 @@ void initializeFields(sf::Texture topography)
 			}
 		}
 	}
+	// Initialize graph
+	graphSusceptible.push_back((float)totalSusceptible / (float)totalCells);
+	graphInfectious.push_back((float)totalInfectious / (float)totalCells);
+	graphResistant.push_back((float)totalResistant / (float)totalCells);
+	graphCounter.push_back((float)counter);
 }
 // Set the colors of an image to correspond with the properties of a field of cells
 void imprintField(sf::Image* image)
@@ -159,19 +201,19 @@ void imprintField(sf::Image* image)
 		{
 			if (crntField[i][j].popDensity == 0.0f)
 			{
-				image->setPixel(i, j, COLOR_WATER);
+				image->setPixel(i, j, sf::Color(colorWater[0] * 255.0f, colorWater[1] * 255.0f, colorWater[2] * 255.0f, 255));
 			}
 			else if (crntField[i][j].state == Susceptible)
 			{
-				image->setPixel(i, j, COLOR_SUSCEPTIBLE);
+				image->setPixel(i, j, sf::Color(colorSusceptible[0] * 255.0f, colorSusceptible[1] * 255.0f, colorSusceptible[2] * 255.0f, 255));
 			}
 			else if (crntField[i][j].state == Infectious)
 			{
-				image->setPixel(i, j, COLOR_INFECTIOUS);
+				image->setPixel(i, j, sf::Color(colorInfectious[0] * 255.0f, colorInfectious[1] * 255.0f, colorInfectious[2] * 255.0f, 255));
 			}
 			else
 			{
-				image->setPixel(i, j, COLOR_RESISTANT);
+				image->setPixel(i, j, sf::Color(colorResistant[0] * 255.0f, colorResistant[1] * 255.0f, colorResistant[2] * 255.0f, 255));
 			}
 		}
 	}
@@ -201,6 +243,10 @@ bool checkInfectious(unsigned int i, unsigned int j)
 // Handle updating of cells
 void updateField()
 {
+	growthSusceptible = 0;
+	growthInfectious = 0;
+	growthResistant = 0;
+
 	for (unsigned int i = 0; i < NUM_CELLS; i++)
 	{
 		for (unsigned int j = 0; j < NUM_CELLS; j++)
@@ -208,6 +254,10 @@ void updateField()
 			if (prevField[i][j].state == Susceptible && checkInfectious(i, j) && randf() < infectionChance * prevField[i][j].popDensity)
 			{
 				crntField[i][j].state = Infectious;
+				totalInfectious++;
+				growthInfectious++;
+				totalSusceptible--;
+				growthSusceptible--;
 			}
 			else if (prevField[i][j].state == Infectious)
 			{
@@ -215,6 +265,10 @@ void updateField()
 				{
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
+					totalInfectious--;
+					growthInfectious--;
+					totalResistant++;
+					growthResistant++;
 				}
 				else
 				{
@@ -227,6 +281,10 @@ void updateField()
 				{
 					crntField[i][j].state = Susceptible;
 					crntField[i][j].time = 0;
+					totalResistant--;
+					growthResistant--;
+					totalSusceptible++;
+					growthSusceptible++;
 				}
 				else
 				{
@@ -264,7 +322,7 @@ sf::Sprite fieldSprite;
 void initializeTextures()
 {
 	// Load Texture
-	if (!topography.loadFromFile(TOPOGRAPHY_FILE))
+	if (!topography.loadFromFile(topographyFile))
 	{
 		std::cout << "Failed to load the topography texture" << std::endl;
 	}
@@ -320,6 +378,8 @@ int main()
 	window.setFramerateLimit(speed);
 	// Initialize ImGUI
 	ImGui::SFML::Init(window);
+	// Initialize ImPlot
+	ImPlot::CreateContext();
 	// Initialize all textures
 	initializeTextures();
 
@@ -361,16 +421,55 @@ int main()
 				window.close();
 			if (event.type == sf::Event::KeyPressed)
 			{
-				if (event.key.code == sf::Keyboard::P)
+				if (event.key.code == sf::Keyboard::Space)
 				{
 					paused = !paused;
 				}
 				if (event.key.code == sf::Keyboard::R)
 				{
-					// Initialize all textures
-					initializeTextures();
 					// Reset counter
 					counter = 0;
+					// Reset Proportion Graph
+					totalCells = 0;
+					totalSusceptible = 0;
+					totalInfectious = 0;
+					totalResistant = 0;
+					graphSusceptible.clear(); graphSusceptible.reserve(100000);
+					graphInfectious.clear(); graphInfectious.reserve(100000);
+					graphResistant.clear(); graphResistant.reserve(100000);
+					graphCounter.clear(); graphCounter.reserve(100000);
+					// Reset Growth Graph
+					graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
+					graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
+					graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+					// Initialize all textures
+					initializeTextures();
+				}
+				if (event.key.code == sf::Keyboard::S)
+				{
+					std::string filepath =
+						"screenshots/Step " + std::to_string(counter) +
+						" ,initInf " + std::to_string(initialInfectious) +
+						" ,infChance " + std::to_string(infectionChance) +
+						" ,infTime " + std::to_string(infectiousTime) +
+						" ,resTime " + std::to_string(resistantTime) +
+						" ,Seed " + std::to_string(seed) +
+						".png";
+					fieldImage.saveToFile(filepath);
+				}
+			}
+			if (event.type == sf::Event::MouseWheelScrolled)
+			{
+				if (event.key.code == sf::Mouse::VerticalWheel)
+				{
+					if (event.mouseWheel.x > 0 && speed + 2 <= 60)
+					{
+						speed += 2;
+					}
+					else if (event.mouseWheel.x < 0 && speed - 2 >= 1)
+					{
+						speed -= 2;
+					}
 				}
 			}
 		}
@@ -380,25 +479,158 @@ int main()
 
 
 
+
+
 		// ImGUI UI
 		ImGui::Begin("Settings");
 		// Handles restarting
-		if (ImGui::Button("Restart"))
+		if (ImGui::Button("Restart (R)"))
 		{
-			// Initialize all textures
-			initializeTextures();
 			// Reset counter
 			counter = 0;
+			// Reset Proportion Graph
+			totalCells = 0;
+			totalSusceptible = 0;
+			totalInfectious = 0;
+			totalResistant = 0;
+			graphSusceptible.clear(); graphSusceptible.reserve(100000);
+			graphInfectious.clear(); graphInfectious.reserve(100000);
+			graphResistant.clear(); graphResistant.reserve(100000);
+			graphCounter.clear(); graphCounter.reserve(100000);
+			// Reset Growth Graph
+			graphGrowthSusceptible.clear(); graphGrowthSusceptible.reserve(100000);
+			graphGrowthInfectious.clear(); graphGrowthInfectious.reserve(100000);
+			graphGrowthResistant.clear(); graphGrowthResistant.reserve(100000);
+			// Initialize all textures
+			initializeTextures();
 		}
 		// Handles pausing
-		ImGui::Checkbox("Pause", &paused);
+		ImGui::Checkbox("Pause (SPACE)", &paused);
 		// Controls Variables
-		ImGui::SliderInt("Speed", &speed, 1, 120);
+		ImGui::Text("Ctrl + Left Click on variables to change manually");
+		ImGui::SliderInt("Speed (Mouse Wheel)", &speed, 1, 60);
 		ImGui::SliderFloat("Initial Infectious", &initialInfectious, 0.000001f, 1.0f, "%.6f");
 		ImGui::SliderFloat("Infection Chance", &infectionChance, 0.01f, 1.0f, "%.2f");
 		ImGui::SliderInt("Infectious Time", &infectiousTime, 0, 365);
 		ImGui::SliderInt("Resistant Time", &resistantTime, 0, 365);
+		ImGui::SliderInt("Seed", &seed, 0, 999999999);
+		// Controls colors
+		ImGui::ColorEdit3("Susceptible", colorSusceptible);
+		ImGui::ColorEdit3("Infectious", colorInfectious);
+		ImGui::ColorEdit3("Resistant", colorResistant);
+		ImGui::ColorEdit3("Water", colorWater);
+		// Handles screenshot saving
+		if (ImGui::Button("Save Screenshot (S)"))
+		{
+			std::string filepath = 
+				"screenshots/Step " + std::to_string(counter) + 
+				" ,initInf " + std::to_string(initialInfectious) + 
+				" ,infChance " + std::to_string(infectionChance) + 
+				" ,infTime " + std::to_string(infectiousTime) + 
+				" ,resTime " + std::to_string(resistantTime) + 
+				" ,Seed " + std::to_string(seed) +
+				".png";
+			fieldImage.saveToFile(filepath);
+		}
 		ImGui::End();
+
+
+
+
+
+		// Update Proportion Graph
+		graphSusceptible.push_back((float)totalSusceptible / (float)totalCells);
+		graphInfectious.push_back((float)totalInfectious / (float)totalCells);
+		graphResistant.push_back((float)totalResistant / (float)totalCells);
+		graphCounter.push_back((float)counter);
+		// Graph Window
+		ImGui::Begin("Proportion Graph");
+		// Draw Settings
+		ImGui::Checkbox("Susceptible", &drawSusceptible);
+		ImGui::SameLine();
+		ImGui::Checkbox("Infectious", &drawInfectious);
+		ImGui::SameLine();
+		ImGui::Checkbox("Resistant", &drawResistant);
+		ImGui::Checkbox("Legend", &legend);
+		ImGui::Text("Right Click on graph for more options");
+		// Take care of flags
+		ImPlotFlags flagLegend = 0;
+		if (!legend)
+			flagLegend = ImPlotFlags_NoLegend;
+		// Draw Graph
+		ImPlot::BeginPlot("Plot", "step", "proportion", ImVec2(-1, 0), flagLegend, ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit | ImPlotAxisFlags_Lock);
+		if (drawSusceptible)
+		{
+			// Draw Susceptible
+			ImPlot::PushStyleColor(0, ImVec4(colorSusceptible[0], colorSusceptible[1], colorSusceptible[2], 1.0f));
+			ImPlot::PlotLine("Susceptible", &graphCounter.front(), &graphSusceptible.front(), graphSusceptible.size());
+		}
+		if (drawInfectious)
+		{
+			// Draw Infectious
+			ImPlot::PushStyleColor(0, ImVec4(colorInfectious[0], colorInfectious[1], colorInfectious[2], 1.0f));
+			ImPlot::PlotLine("Infectious", &graphCounter.front(), &graphInfectious.front(), graphInfectious.size());
+		}
+		if (drawResistant)
+		{
+			// Draw Resistant
+			ImPlot::PushStyleColor(0, ImVec4(colorResistant[0], colorResistant[1], colorResistant[2], 1.0f));
+			ImPlot::PlotLine("Resistant", &graphCounter.front(), &graphResistant.front(), graphResistant.size());
+		}
+		ImPlot::EndPlot();
+		ImGui::End();
+
+
+
+
+
+		// Update Growth Graph
+		graphGrowthSusceptible.push_back((float)growthSusceptible);
+		graphGrowthInfectious.push_back((float)growthInfectious);
+		graphGrowthResistant.push_back((float)growthResistant);
+		// Graph Window
+		ImGui::Begin("Growth Graph");
+		// Draw Settings
+		ImGui::Checkbox("Growth Susceptible", &drawGrowthSusceptible);
+		ImGui::SameLine();
+		ImGui::Checkbox("Growth Infectious", &drawGrowthInfectious);
+		ImGui::SameLine();
+		ImGui::Checkbox("Growth Resistant", &drawGrowthResistant);
+		ImGui::Checkbox("Lock Y-axis", &lockY);
+		ImGui::SameLine();
+		ImGui::Checkbox("Legend", &legendGrowth);
+		ImGui::Text("Right Click on graph for more options");
+		// Take care of Flags
+		ImPlotFlags flagLock = 0;
+		if (lockY)
+			flagLock = ImPlotAxisFlags_Lock;
+		ImPlotFlags flagGrowthLegend = 0;
+		if (!legendGrowth)
+			flagGrowthLegend = ImPlotFlags_NoLegend;
+		// Draw Graph
+		ImPlot::BeginPlot("Growth Plot", "step", "proportion", ImVec2(-1, 0), flagGrowthLegend, ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit | flagLock);
+		if (drawGrowthSusceptible)
+		{
+			// Draw Growth Susceptible
+			ImPlot::PushStyleColor(0, ImVec4(colorSusceptible[0], colorSusceptible[1], colorSusceptible[2], 1.0f));
+			ImPlot::PlotLine("Growth Susceptible", &graphCounter.front(), &graphGrowthSusceptible.front(), graphGrowthSusceptible.size());
+		}
+		if (drawGrowthInfectious)
+		{
+			// Draw Growth Infectious
+			ImPlot::PushStyleColor(0, ImVec4(colorInfectious[0], colorInfectious[1], colorInfectious[2], 1.0f));
+			ImPlot::PlotLine("Growth Infectious", &graphCounter.front(), &graphGrowthInfectious.front(), graphGrowthInfectious.size());
+		}
+		if (drawGrowthResistant)
+		{
+			// Draw Growth Resistant
+			ImPlot::PushStyleColor(0, ImVec4(colorResistant[0], colorResistant[1], colorResistant[2], 1.0f));
+			ImPlot::PlotLine("Growth Resistant", &graphCounter.front(), &graphGrowthResistant.front(), graphGrowthResistant.size());
+		}
+		ImPlot::EndPlot();
+		ImGui::End();
+
+
 
 
 
@@ -439,6 +671,8 @@ int main()
 			// Clear window
 			window.clear(sf::Color(25, 25, 30));
 			// Displays step on which you are on
+			std::string counterString = "Step: " + std::to_string(counter);
+			counterText.setString(counterString);
 			window.draw(counterText);
 			// Draw topography
 			window.draw(topographySprite);
@@ -453,6 +687,8 @@ int main()
 		}
 	}
 
+	// End ImPlot
+	ImPlot::DestroyContext();
 	// End ImGUI
 	ImGui::SFML::Shutdown();
 
