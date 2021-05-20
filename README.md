@@ -10,6 +10,10 @@ Capabilities:
 - can switch out the population density map
 - intuitive UI using ImGUI that allows the change of variables on the fly
 
-Example:
+Simulation Example:
 
 ![ExampleGIF](https://github.com/VictorGordan/sir/blob/main/gif/SIR%20Model.gif)
+
+UI Example:
+
+![ExampleGIF](https://github.com/VictorGordan/sir_model/blob/main/gif/UI.gif)
