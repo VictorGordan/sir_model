@@ -279,7 +279,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Infectious)
 			{
-				if (prevField[i][j].time >= infectiousTime && randf() > (0.8f / (1.0f + 1800.0f * std::exp(-15.0f * prevField[i][j].popDensity))) + 0.1f) // Longer infection in bigger cities
+				if (prevField[i][j].time >= infectiousTime && randf())
 				{
 					crntField[i][j].state = Resistant;
 					crntField[i][j].time = 0;
@@ -295,7 +295,7 @@ void updateField()
 			}
 			else if (prevField[i][j].state == Resistant && prevField[i][j].popDensity != 0.0f)
 			{
-				if (prevField[i][j].time >= resistantTime && randf() < (0.8f / (1.0f + 1800.0f * std::exp(-15.0f * prevField[i][j].popDensity))) + 0.1f) // Shorter resistance in bigger cities
+				if (prevField[i][j].time >= resistantTime && randf())
 				{
 					crntField[i][j].state = Susceptible;
 					crntField[i][j].time = 0;
